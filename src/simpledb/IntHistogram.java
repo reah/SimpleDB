@@ -3,7 +3,15 @@ package simpledb;
 /** A class to represent a fixed-width histogram over a single integer-based field.
  */
 public class IntHistogram {
-
+	private int buckets;
+	private int min;
+	private int max;
+	private int[] histogram;
+	private int width;
+	private int lastBucketWidth;
+	private int numValues;
+	private int belowZero;
+	
     /**
      * Create a new IntHistogram.
      * 
@@ -22,6 +30,19 @@ public class IntHistogram {
      */
     public IntHistogram(int buckets, int min, int max) {
     	// some code goes here
+    	this.belowZero = 0;
+    	this.buckets = buckets;
+    	this.min = min;
+    	this.max = max;
+    	this.histogram = new int[buckets];
+    	if(min < 0){
+    		this.belowZero = min * -1;
+    		this.min = 0;
+    		this.max = max + this.belowZero;
+    	}
+    	this.width = (int)Math.ceil(((double)(max - min + 1))/buckets);
+    	this.lastBucketWidth = this.max - (min + this.width * (this.buckets - 1));
+    	this.numValues = 0;
     }
 
     /**
