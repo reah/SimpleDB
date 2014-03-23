@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TableStats {
 	//Member Variables
-	private int tableId;
 	private int numTuples;
 	private int ioCostPerPage;
 	private TupleDesc td;
@@ -98,12 +97,11 @@ public class TableStats {
         // You should try to do this reasonably efficiently, but you don't
         // necessarily have to (for example) do everything
         // in a single scan of the table.
-        // some code goes here    	
-    	this.tableId = tableid;
+        // some code goes here
     	this.numTuples = 0;
     	this.ioCostPerPage = ioCostPerPage;
-    	this.td = file.getTupleDesc();
     	this.file = (HeapFile) Database.getCatalog().getDbFile(tableid);
+    	this.td = file.getTupleDesc();
     	this.maxMap = new HashMap<String, Integer>();
     	this.minMap = new HashMap<String, Integer>();
     	this.histValues = new HashMap<String, IntHistogram>();
