@@ -9,7 +9,7 @@ public class IntHistogram {
 	private int[] histogram;
 	private int width;
 	private int lastBucketWidth;
-	private int numValues;
+	private int count;
 	private int belowZero;
 	
     /**
@@ -41,8 +41,8 @@ public class IntHistogram {
     		this.max = max + this.belowZero;
     	}
     	this.width = (int)Math.ceil(((double)(max - min + 1))/buckets);
-    	this.lastBucketWidth = this.max - (min + this.width * (this.buckets - 1));
-    	this.numValues = 0;
+    	this.lastBucketWidth = this.max - (min + this.width * (this.buckets - 1)) + 1;
+    	this.count = 0;
     }
 
     /**
@@ -51,6 +51,10 @@ public class IntHistogram {
      */
     public void addValue(int v) {
     	// some code goes here
+    	this.count++;
+    	v += this.belowZero;
+    	int position = (v - this.min)/this.width;
+    	this.histogram[position] += 1;
     }
 
     /**
@@ -66,7 +70,93 @@ public class IntHistogram {
     public double estimateSelectivity(Predicate.Op op, int v) {
 
     	// some code goes here
-        return -1.0;
+    	int position = (v - this.min)/this.width;
+    	v += this.belowZero;
+    	int width = this.width;
+    	if(position == this.buckets - 1){
+    		width = this.lastBucketWidth;
+    	}
+    	double estimate = 0;
+        switch(op){
+	        case EQUALS: 
+	        	if(v < min || v > max)
+	        		estimate = 0;
+	        	else
+	        		estimate = (((double)this.histogram[position])/width)/this.count;
+			break;
+			case GREATER_THAN:
+				estimate = this.greaterThan(v, width, position);
+			break;
+			case LESS_THAN: 
+				estimate = this.lessThan(v, width, position);
+			break;
+			case LESS_THAN_OR_EQ: 
+				estimate = this.lessThan(v+1, width, position);
+			break;   
+			case GREATER_THAN_OR_EQ: 
+				estimate = this.greaterThan(v-1, width, position);
+			break;  
+			case NOT_EQUALS: 
+	        	if(v>=min && v<=max)
+	        		estimate = 1 - (((double)this.histogram[position])/width)/this.count;
+	        	else
+	        		estimate = 1;
+			break;  
+        }
+        return estimate;    
+    }
+    
+    /*
+     * Helper method for GREATER_THAN/GREATER_THAN_OR_EQ estimation
+     */
+    
+    public double greaterThan(int v, int width, int position){
+    	double estimate = 0;
+    	double b_f;
+    	double b_p;
+    	int b_right;
+    	if(v < this.min){
+			estimate = 1;
+		} else if (v > this.max){
+			estimate = 0;
+		} else {
+			b_f = ((double) this.histogram[position])/this.count;
+			b_right = this.min + this.width * (position + 1);
+			if(position == this.buckets - 1){
+				b_right = this.max;
+			}
+			b_p = ((double)(b_right - v))/width;
+			estimate = b_p * b_f;
+			for(int i = position + 1; i < this.buckets; i++){
+				estimate += ((double)this.histogram[i])/this.count;
+			}
+		}
+    	return estimate;
+    }
+    
+    /*
+     * Helper method for LESS_THAN/LESS_THAN_OR_EQ estimation
+     */
+    
+    public double lessThan(int v, int width, int position){
+    	double estimate = 0;
+    	double b_f;
+    	double b_p;
+    	int b_left;
+    	if(v < this.min){
+			estimate = 0;
+		} else if (v > this.max){
+			estimate = 1;
+		} else {
+			b_f = ((double) this.histogram[position])/this.count;
+			b_left = min + this.width * position;
+			b_p = ((double)(v - b_left))/width;
+			estimate = b_p * b_f;
+			for(int i = position - 1; i >= 0; i--){
+				estimate += ((double)this.histogram[i])/this.count;
+			}
+		}
+    	return estimate;
     }
     
     /**
