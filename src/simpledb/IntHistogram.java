@@ -68,10 +68,9 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-
     	// some code goes here
-    	int position = (v - this.min)/this.width;
     	v += this.belowZero;
+    	int position = (v - this.min)/this.width;
     	int width = this.width;
     	if(position == this.buckets - 1){
     		width = this.lastBucketWidth;
@@ -79,7 +78,7 @@ public class IntHistogram {
     	double estimate = 0;
         switch(op){
 	        case EQUALS: 
-	        	if(v < min || v > max)
+	        	if(v < this.min || v > this.max)
 	        		estimate = 0;
 	        	else
 	        		estimate = (((double)this.histogram[position])/width)/this.count;
@@ -91,10 +90,10 @@ public class IntHistogram {
 				estimate = this.lessThan(v, width, position);
 			break;
 			case LESS_THAN_OR_EQ: 
-				estimate = this.lessThan(v+1, width, position);
+				estimate = this.lessThan(v + 1, width, position);
 			break;   
 			case GREATER_THAN_OR_EQ: 
-				estimate = this.greaterThan(v-1, width, position);
+				estimate = this.greaterThan(v - 1, width, position);
 			break;  
 			case NOT_EQUALS: 
 	        	if(v>=min && v<=max)
