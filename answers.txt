@@ -1,0 +1,79 @@
+Reah Miyara : cs186-dj
+Xiaoqin Zhou : cs186-ax
+
+
+								Project #3 - SimpleDB: Query Optimizer
+
+
+1.
+———————————————————————————————————————————————————————————
+STEP 1: simpledb.Parser.main() and simpledb.Parser.start():
+———————————————————————————————————————————————————————————
+
+The main method, simpledb.Parser.main(), is where query processing begins. Specifically, this method validates the correct number of arguments received and if correct it initializes the process with simpledb.Parser.start(), otherwise, it exits.
+
+simpledb.Parser.start() processes:
+
+1. Populates the catalog with data from the text file.
+2. Computes table statistics using the TableStats class for each table in the system catalog, Catalog class.
+3. Process the statements using simpledb.Parser.processNextStatement().
+
+———————————————————————————————————————————————————————————
+STEP 2: simpledb.Parser.processNextStatement():
+———————————————————————————————————————————————————————————
+
+Two method processes:
+
+1. Fetch the query plan by calling the handleQueryStatement() method
+2. Execute the query by calling the execute() method
+
+———————————————————————————————————————————————————————————
+STEP 3: simpledb.Parser.handleQueryStatement((ZQuery)s):
+———————————————————————————————————————————————————————————
+
+Three method processes:
+
+1. Instantiate a LogicalPlan object via parseQueryLogicalPlan() which parses the input query.
+2. Using the instantiated LogicalPlan object call physicalPlan(), which optimizes the query and returns a DbIterator object used to compute the inputted query.
+3. Ultimately, return the final query plan.
+
+———————————————————————————————————————————————————————————
+STEP 4: simpledb.LogicalPlan.physicalPlan():
+———————————————————————————————————————————————————————————
+
+Five main processes (for optimizations of handling queries): 
+
+1. Each table’s corresponding data is stored in various hashes or arraylists. For each filter node in a table’s data this method calculates an estimate of the table’s selectivity based on how many records a filter returns given by the respective Predicate input, ultimately updating the table’s selectivity with the optimal choice. 
+3. Instantiate a JoinOptimizer object to calculate the optimal join order plan for the query.
+4. Check whether or not the query has any aggregate operators.
+5. Checks whether or not the query has an order by statement.
+
+———————————————————————————————————————————————————————————
+STEP 5: simpledb.TableStats.estimateSelectivity()
+———————————————————————————————————————————————————————————
+
+Generation of histograms over all fields as given by TupleDesc, estimating each’s selectivity in the following process: 
+
+1. In the TableStats constructor, before entering estimateSelectivity(), we fill the HashMaps with corresponding data, including max and min values while generating histograms for each field. 
+
+NOTE: IntHistogram: designed using an int[] array stores counts of all field values which map to appropriate range buckets. If field value contains a negative minimum number, the array range is appropriately adjusted by shifting all values by the “belowZero” variable making the range vary from 0 to some positive value X, avoiding negative array positions/indices.
+
+2. estimateSelectivity() fetches the appropriate histogram from the Map (either IntHistogram HashMap or StringHistogram HashMap) when called on a field. Then, estimateSelectivity() is invoked on that histogram and the appropriate max and min values for the corresponding field are inputted.
+
+———————————————————————————————————————————————————————————
+STEP 6: simpledb.JoinOptimizer.orderJoins()
+———————————————————————————————————————————————————————————
+
+The selectivities estimated in the previous step with their corresponding TableStats for all tables assist in determining the optimal ordering of joins for the query, then:
+
+1. We add all single-table plans to a PlanCache object
+
+2. We dynamically store the optimal plans for every subset, of increasing size, until the entire set has been planned. These plans are determined by the statistics computed in TableStats.
+
+3. When calculating the optimal plan, the helper method computeCostAndCardOfSubplan() uses the two methods estimateJoinCost() and estimateJoinCardinality().
+
+	a. estimateJoinCost(): returns a simple estimation of the cost to join (cost1 + (card1*cost2) + (card1*card2))
+	b. estimateJoinCardinality(): returns an estimation of cardinality, given by the max of the two cardinalities if the operation is EQUALS, otherwise, it is 70% of the product of the two cardinalities.
+
+4. Finally, we retrieve and return the optimal plan for the entire join set from PlanCache.
+
