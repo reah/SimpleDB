@@ -111,7 +111,7 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic nested-loops
             // join.
-            return -1.0;
+            return (double)(cost1 + card1 * cost2 +  card1 * card2);
         }
     }
 
@@ -155,8 +155,16 @@ public class JoinOptimizer {
             boolean t2pkey, Map<String, TableStats> stats,
             Map<String, Integer> tableAliasToId) {
         int card = 1;
-        // some code goes here
-        return card <= 0 ? 1 : card;
+        // some code goes here  
+        if (joinOp.equals(Predicate.Op.EQUALS)) {
+        	if (card1 < card2) {
+        		return card2;
+        	} else {
+        		return card1;
+        	}
+        } else {
+        	return (int)(card1*card2*0.3);
+        }
     }
 
     /**
@@ -219,10 +227,27 @@ public class JoinOptimizer {
 
         // See the project writeup for some hints as to how this function
         // should work.
-
         // some code goes here
-        //Replace the following
-        return joins;
+    	PlanCache optJoins = new PlanCache();
+        Set<LogicalJoinNode> outPut = new HashSet<LogicalJoinNode>(joins);
+        
+        for(int i = 0; i< joins.size(); i++){
+            for(Set<LogicalJoinNode> s: enumerateSubsets(joins,i+1)){
+            	CostCard bestPlan = new CostCard();
+                bestPlan.cost = Double.POSITIVE_INFINITY;
+                for(LogicalJoinNode ss: s){
+                	CostCard plans = computeCostAndCardOfSubplan(stats,filterSelectivities,ss,s,bestPlan.cost,optJoins);
+                    if(plans != null && plans.cost < bestPlan.cost){
+                    	bestPlan = plans;
+                    	optJoins.addPlan(s,bestPlan.cost,bestPlan.card,bestPlan.plan);    
+                    }
+                }
+            }
+        }
+        if(explain){
+            printJoins(joins,optJoins,stats,filterSelectivities);
+        }
+        return optJoins.getOrder(outPut);
     }
 
     // ===================== Private Methods =================================

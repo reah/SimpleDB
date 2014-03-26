@@ -276,7 +276,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
 		
 		// There were a number of ways to do the query in this quiz, reasonably well;
 		// we're just doing a heuristics-based optimizer, so, only ignore the really
-		// bad case where "hobbies" is the outermost node in the left-deep tree.
+		// bad case where "hobbies" is the outermost node in the left-deep tree.;
 		Assert.assertFalse(result.get(0).t1Alias == "hobbies");
 		
 		// Also check for some of the other silly cases, like forcing a cross join by
